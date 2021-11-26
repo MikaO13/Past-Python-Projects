@@ -1,0 +1,566 @@
+import random
+suits = ('Hearts', 'Diamonds', 'Spades', 'Clubs')
+ranks = ('Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King', 'Ace')
+values = {'Two':1, 'Three':2, 'Four':3, 'Five':4, 'Six':5, 'Seven':6, 'Eight':7, 'Nine':8, 'Ten':9, 'Jack':10, 'Queen':11, 'King':12, 'Ace':13}
+winningHands = {"Royal Flush":1, "Straight Flush":2, "Four of a Kind":3, "Full House":4, "Flush":5, "Straight":6, "Three of a Kind":7, "Two Pair":8, "One Pair":9, "High Card":10}
+
+class Card:
+    
+    def __init__(self,suit,rank):
+        self.suit = suit
+        self.rank = rank
+    
+    def __str__(self):
+        return self.rank+' of '+self.suit
+    
+class Deck:
+    
+    def __init__(self):
+        self.deck = [] 
+        for suit in suits:
+            for rank in ranks:
+                self.deck.append(Card(suit,rank))
+    
+    def __str__(self):
+        deck_comp = ''
+        for card in self.deck:
+            deck_comp += '\n' + card.__str__()
+        return "The deck has: " + deck_comp
+
+    def shuffle(self):
+        random.shuffle(self.deck)
+        
+    def deal(self):
+        single_card = self.deck.pop()
+        return single_card
+
+class Hand:
+    def __init__(self,name,chips):
+        self.fullHand = []
+        self.smallHand = []
+        self.bigHand = []
+        self.name = name
+        self.chips = chips
+    
+    def add_card(self,card):
+        self.fullHand.append(card)
+            
+    def sort(self, hand):
+        newlist = []
+        while hand != []:
+            greatest = 0
+            greatcard = None
+            for card in hand:
+                value = values[card.rank]
+                if value > greatest:
+                    greatest = value
+                    greatcard = card
+            newlist.append(greatcard)
+            hand.remove(greatcard)
+        return newlist
+    
+    def __str__(self):
+        hand_comp = ''
+        for card in self.fullHand:
+            if card != self.fullHand[-1]:
+                hand_comp += card.__str__() + ', '
+            else:
+                hand_comp += card.__str__() + '.'
+        #return "{} has: {}".format(self.name, hand_comp)
+        return hand_comp
+
+class Chips:
+    
+    def __init__(self):
+        self.total = 100
+        self.bet = 0
+        
+    def winBet(self):
+        self.total += self.bet
+    
+    def loseBet(self):
+        self.total -= self.bet
+
+def take_bet(player):
+    while True:
+        try:
+            amt = int(input('\n' + player.name + ", how much would you like to bet? >> "))
+        except:
+            print("Please enter a valid amount.")
+            continue
+        else:
+            if player.chips.total < amt or amt <= 0:
+                print("Please enter a valid amount.")
+            else:
+                return amt
+                break
+
+def royal_flush(hand):
+    winning = straight_flush(hand)
+    if winning:
+        card_nums = count_cards(hand)
+        if 'Ten' in card_nums and 'Jack' in card_nums and 'Queen' in card_nums and 'King' in card_nums and 'Ace' in card_nums:
+            return winning
+        else:
+            return False
+        
+def straight_flush(hand): 
+    winning = flush(hand)
+    if winning:
+        suit = winning[0].suit
+        
+    flush_hand = []
+    
+    for card in hand:
+        if card.suit == suit:
+            flush_hand.append(card)
+    
+    return straight(flush_hand)
+        
+def four(hand):
+    card_nums = count_cards(hand)
+    four_value = 0
+    for value in card_nums:
+        if card_nums[value] >= 4:
+            four_value = value
+    if four_value != 0:
+        cards = []
+        for card in hand:
+            if card.rank == four_value and len(cards) < 4:
+                cards.append(card)
+        return cards
+    return False
+
+def full_house(hand): 
+    card_nums = count_cards(hand)
+    pair_value = 0
+    three_value = 0
+    for value in card_nums:
+        if card_nums[value] >= 3 and three_value == 0:
+            three_value = value
+    for value in card_nums:
+        if card_nums[value] >= 2 and value != three_value:
+            pair_value = value
+    if pair_value != 0 and three_value != 0:
+        full_cards = []
+        for card in hand:
+            if card.rank == pair_value and len(full_cards) < 2:
+                full_cards.append(card)
+        for card in hand:
+            if card.rank == three_value and len(full_cards) < 5:
+                full_cards.append(card)
+        return full_cards
+    else:
+        return False
+
+def flush(hand):
+    card_suits = {}
+    for card in hand:
+        if card.suit in card_suits:
+            card_suits[card.suit] += 1
+        else:
+            card_suits[card.suit] = 1
+    flush_suit = None
+    for suit in card_suits:
+        if card_suits[suit] >= 5:
+            flush_suit = suit
+    if flush_suit != None:
+        flush_cards = []
+        for card in hand:
+            if card.suit == flush_suit and len(flush_cards) < 5:
+                flush_cards.append(card)
+        return flush_cards
+    else:
+        return False
+            
+def straight(hand):
+    card_nums = []
+    for card in hand:
+        if values[card.rank] not in card_nums:
+            card_nums.append(values[card.rank])
+    great_start_card = 0
+    
+    for value in card_nums:
+        if ((value)% 13)+1 in card_nums and ((value+1)% 13)+1 in card_nums and ((value+2)% 13)+1 in card_nums and ((value+3)% 13)+1 in card_nums:
+            if value > great_start_card:
+                great_start_card = value
+    
+    if great_start_card != 0:
+        straight_cards = []
+        winning_ranks = [great_start_card, ((great_start_card)% 13)+1,
+                         ((great_start_card+1)% 13)+1, ((great_start_card+2)% 13)+1, 
+                         ((great_start_card+3)% 13)+1]
+        for card in hand:
+            if values[card.rank] in winning_ranks:
+                straight_cards.append(card)
+                winning_ranks.remove(values[card.rank])
+                
+        return straight_cards
+    else:
+        return False
+
+def three(hand): 
+    card_nums = count_cards(hand)
+    three_value = 0
+    for value in card_nums:
+        if card_nums[value] >= 3 and value > three_value:
+            three_value = value
+    if three_value != 0:
+        cards = []
+        for card in hand:
+            if card.rank == three_value and len(cards) < 3:
+                cards.append(card)
+        return cards
+    else:
+        return False
+        
+def two_pair(hand):
+    card_nums = count_cards(hand)
+    pair_values = []
+    for value in card_nums:
+        if card_nums[value] >= 2:
+            if value not in pair_values:
+                pair_values.append(value)
+    if len(pair_values) == 2:
+        pair_cards = []
+        for value in pair_values:
+            for card in hand:
+                if card.rank == value and len(pair_cards) < 2*(pair_values.index(value) + 1):
+                    pair_cards.append(card)
+        return pair_cards
+    else:
+        return False
+
+def one_pair(hand): 
+    card_nums = count_cards(hand)
+    pair_value = 0
+    for value in card_nums:
+        if card_nums[value] >= 2:
+            pair_value = value
+    if pair_value != 0:
+        pair_cards = []
+        for card in hand:
+            if card.rank == pair_value and len(pair_cards) < 2:
+                pair_cards.append(card)
+        return pair_cards
+    else:
+        return False
+
+def high_card(hand):
+    card_nums = count_cards(hand)
+    highest_value = 0
+    for value in card_nums:
+        if values[value] > highest_value:
+            highest_value = values[value]
+    for card in hand:
+        if values[card.rank] == highest_value:
+            return [card]
+        
+
+def count_cards(hand):
+    card_nums = {}
+    for card in hand:
+        if card.rank in card_nums:
+            card_nums[card.rank] += 1
+        else:
+            card_nums[card.rank] = 1
+    return card_nums
+
+def check_win(hand):
+    best_hand = []
+    best_type = ""
+    comparing = royal_flush(hand)
+    if comparing:
+        best_hand = comparing
+        best_type = "Royal Flush"
+    else:
+        comparing = straight_flush(hand)
+        if comparing:
+            best_hand = comparing
+            best_type = "Straight Flush"
+        else:
+            comparing = four(hand)
+            if comparing:
+                best_hand = comparing
+                best_type = "Four of a Kind"
+            else:
+                comparing = full_house(hand)
+                if comparing:
+                    best_hand = comparing
+                    best_type = "Full House"
+                else:
+                    comparing = flush(hand)
+                    if comparing:
+                        best_hand = comparing
+                        best_type = "Flush"
+                    else:
+                        comparing = straight(hand)
+                        if comparing:
+                            best_hand = comparing
+                            best_type = "Straight"
+                        else:
+                            comparing = three(hand)
+                            if comparing:
+                                best_hand = comparing
+                                best_type = "Three of a Kind"
+                            else:
+                                comparing = two_pair(hand)
+                                if comparing:
+                                    best_hand = comparing
+                                    best_type = "Two Pair"
+                                else:
+                                    comparing = one_pair(hand)
+                                    if comparing:
+                                        best_hand = comparing
+                                        best_type = "One Pair"
+                                    else:
+                                        best_hand = high_card(hand)
+                                        best_type = "High Card"
+    return best_hand, best_type
+
+def name_player(default):
+    global forbiddenames
+    if default == 'Dealer':
+        return 'Dealer'
+    else:
+        name = input("What would you like to be called? >> ")
+        if name in forbiddenames:
+            name == default
+        forbiddenames.append(name)
+        return name
+
+def compareHands(hands): #todo: change this so it doesn't delete cards from the overall hand that you return - placeholder
+    '''
+    compareHands(hands)
+    A function which takes in a list of card hands, 'hands', 
+    which may be of any length, and compares then against each other, then returns the winner.
+    Author: Mika
+    
+    Note: logic might be a bit off
+    '''
+    
+    if len(hands) < 2:
+        print("ERROR ERROR ERROR")
+        return False
+        
+    winners = []
+    winnersHands = []
+    winningType = "High Card"
+    
+    for hand in hands:
+        newWinningHand, newWinningType = check_win(hand)
+        if winningHands[newWinningType] < winningHands[winningType]:
+            winningType = newWinningType
+            winners = [hand]
+            winnersHands = newWinningHand
+        elif winningHands[newWinningType] == winningHands[winningType]:
+            winners.append(hand)
+            winnersHands.append(newWinningHand)
+            
+    if len(winners) != 1:
+        
+        tieWinners = []
+        tieWinnerHands = []
+        
+        if len(winners) == 2:
+            if count_cards(winners[0]) == count_cards(winners[1]):
+                return winners
+        
+        while len(tieWinners) != 1:
+            highCardVal = "Two"
+                    
+            for winnerNum in len(winners):
+                if winnersHands[winnerNum] == []:
+                    emptyWinners.append(winners[winnerNum])
+                    tieWinners.remove(winners[winnerNum])
+                else:
+                    winnerHighCard = high_card(winnersHands[winnerNum])
+                    if values[winnerHighCard] < highCardVal:
+                        highCardVal = winnerHighCard
+                        tieWinners = [winner]
+                    elif values[winnerHighCard] == highCardVal:
+                        tieWinners.append(winner)
+                        
+            if len(tieWinners) > 1:
+                for winnerNum in len(winners):
+                    for card in winnersHands[winnerNum]:
+                        if card.rank == highCardVal:
+                            winnersHands[winnerNum].remove(card)
+                            
+            elif tieWinners == []:
+                tieWinners = emptyWinners
+                winnersHands = []
+                for winnerNum in len(tieWinners):
+                    currWinnerHand = check_win(tieWinners[winnerNum])
+                    deleteHand = currWinnerHand
+                    for card in tieWinners[winnerNum]:
+                        if card not in deleteHand:
+                            tieWinners[winnerNum].append(card)
+                    winnersHands[winnerNum], throwawayVar = check_win(tieWinners[winnerNum])
+            
+            winners = tieWinners
+        
+    return winners
+
+def paigow(first_time=True, pick_players=True):
+    global forbiddenames
+
+    forbiddenames = []
+    
+    deck = Deck()
+    deck.shuffle()
+    
+    howtoinput = "\nYou must make your hands: a big hand of five cards and a small hand of two cards.\nThe small hand must be worth less than the big hand.\n\nTo select your hands, input the places of the cards in your hand currently separated by spaces. For example, with the hand\n'Jack of Spades, Nine of Spades, Nine of Diamonds, Eight of Spades, Seven of Spades, Four of Spades, Two of Hearts', if you\nwanted your big hand to have Jack of Spades, Nine of Spades, Eight of Spades, Seven of Spades, and Four of Spades,\nyou would enter those place numbers separated by spaces, such as 1 2 4 5 6.\nThe other two cards would automatically be entered into your small hand.\n\nIf your small hand is worth more than your big hand, you will be asked to repeat this.\nIf you wish to see this message again, input 'help'."
+    
+    if first_time:
+        startingPlayer = 0
+        print("Hello and Welcome to Mika's Pai Gow Table!")
+        print('Other games by Mika: Seven Card Stud, Texas Hold Em, Let It Ride, Blackjack, Pass the Pig, Hangman, Anagram, Go Fish, War, Uno, Connect 4\n')
+        if 'y' in input('Would you like to hear the rules? ').lower():
+            print('This game is a variation of the classic betting card game, poker.'
+                  '\nAt this table, there are max 6 players.'
+                  '\nThe basics of the game is that you make two hands - a five card and a two card.'
+                  '\nThe five card hand must be better than the two card hand, and they will go against the dealers hand.'
+                  '\nI will refer you to this website - https://upswingpoker.com/pai-gow-poker-how-to-play/ - to learn the rules.'
+                  '\nNow that you know the rules, let us get started!\n')
+    
+    if pick_players:
+        while True:
+            try:
+                numPlayers = int(input("How many people are playing? "))
+            except: 
+                print('Please enter a valid number')
+            else:
+                if numPlayers > 6 or numPlayers < 1:
+                    print('Please enter a valid number')
+                else:
+                    break
+        player1 = Hand(name_player('Player 1'),Chips())
+        players = [player1]
+        if numPlayers > 1:
+            player2 = Hand(name_player('Player 2'),Chips())
+            players.append(player2)
+            if numPlayers > 2:
+                player3 = Hand(name_player('Player 3'),Chips())
+                players.append(player3)
+                if numPlayers > 3:
+                    player4 = Hand(name_player('Player 4'),Chips())
+                    players.append(player4)
+                    if numPlayers > 4:
+                        player5 = Hand(name_player('Player 5'),Chips())
+                        players.append(player5)
+                        if numPlayers > 5:
+                            player6 = Hand(name_player('Player 6'),Chips())
+                            players.append(player6)
+
+    for player in players:
+        for card in range(7):
+            player.add_card(deck.deal())
+        player.fullHand = player.sort(player.fullHand)
+        player.chips.bet = take_bet(player)
+        
+    dealer = Hand(name_player('Dealer'), None)
+    
+    while True:
+        for card in range(7):
+            dealer.add_card(deck.deal())
+        dealer.bigHand = dealer.fullHand[:5]
+        dealer.smallHand = dealer.fullHand[5:]
+        dealer.bigHand = dealer.sort(dealer.bigHand)
+        dealer.smallHand = dealer.sort(dealer.smallHand)
+        
+        dealerWorthMore = compareHands([dealer.bigHand, dealer.smallHand])
+        if len(dealerWorthMore) == 1 and dealerWorthMore[0] == dealer.bigHand:
+            break
+        else:
+            dealer.fullHand = []
+        
+    for player in players:
+        print("Hello, " + player.name + "\nThis is your hand: ")
+        print(player)
+        
+        while True:
+            correctInput = True
+            
+            print(howtoinput)
+            bigHandInput = input("\nWhat would you like your big hand to contain? >> ")
+
+            if bigHandInput == "help" or bigHandInput == "":
+                correctInput = False
+            else:
+                bigHandSplit = bigHandInput.split()
+                bigHandNums = []
+                if len(bigHandSplit) == 5:
+                    for number in bigHandSplit:
+                        if (number == "1" or number == "2" or number == "3" or number == "4" or number == "5" or number == "6" or number == "7"):
+                            if int(number) not in bigHandNums:
+                                bigHandNums.append(int(number))
+                            else:
+                                print("Poor input, try again.")
+                                correctInput = False
+                        else: 
+                            print("Poor input, try again.")
+                            correctInput = False
+                else: 
+                    print("Poor input, try again.")
+                    correctInput = False
+            
+            if correctInput:
+                for cardIndex in range(7): #looping 0-6
+                    if (cardIndex + 1) in bigHandNums: #checking 1-7
+                        player.bigHand.append(player.fullHand[cardIndex]) #appending 0-6
+                    else:
+                        player.smallHand.append(player.fullHand[cardIndex])
+                        
+                biggerHand = compareHands([player.bigHand, player.smallHand])
+                if len(biggerHand) == 1 and biggerHand[0] == player.bigHand:
+                    break
+                else:
+                    print("Smaller hand is worth more/hands are tied, try again.")
+                    continue
+    
+    for player in players:
+        numWins = 0
+        
+        bigWinner = compareHands([player.bigHand, dealer.bigHand])
+        smallWinner = compareHands([player.smallHand, dealer.smallHand])
+        
+        if len(bigWinner) == 1:
+            if bigWinner[0] == player.bigHand:
+                numWins += 1
+                print("{}'s big hand has beat the dealer.".format(player.name))
+            else:
+                print("{}'s big hand has lost to the dealer.".format(player.name))
+        else:
+            print("{}'s big hand has tied with the dealer.".format(player.name))
+        
+        if len(smallWinner) == 1:
+            if smallWinner[0] == player.smallHand:
+                numWins += 1
+                print("{}'s small hand has beat the dealer.".format(player.name))
+            else:
+                print("{}'s small hand has lost to the dealer.".format(player.name))
+        else:
+            print("{}'s small hand has tied with the dealer.".format(player.name))
+            
+        if numWins == 2:
+            player.chips.winBet()
+            print("{} has won both hands, so they win double their bet.".format(player.name))
+        elif numWins == 1:
+            print("{} has won one hand and lost one hand, so they keep their bet.".format(player.name))
+        elif numWins == 0:
+            player.chips.loseBet()
+            print("{} has lost both hands, so they lose their bet.".format(player.name))
+    
+    playAgain = input("Would you like to play another hand? >> ")
+    if 'y' in playAgain.lower():
+        repickPlayers = input("Would you like to repick the players at the table? >> ")
+        if 'y' in repickPlayers.lower():
+            startingPlayer += 1
+            paigow(False, True)
+        else:
+            paigow(False, False)
+    else:
+        print("Thank you for playing at Mika's Pai Gow Table!\nPlease play again and tell your friends!")
+        
+        
